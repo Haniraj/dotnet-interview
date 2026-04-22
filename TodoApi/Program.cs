@@ -1,4 +1,5 @@
 using Microsoft.Data.Sqlite;
+using Microsoft.EntityFrameworkCore;
 using TodoApi.Data;
 using TodoApi.Exceptions;
 using TodoApi.Middleware;
@@ -12,13 +13,14 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-builder.Services.AddScoped<ITodoService>(
-    _ => new TodoService("Data Source=todos.db"));
+//  EF Core SQLite
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseSqlite("Data Source=todos.db"));
+
+// DI
+builder.Services.AddScoped<ITodoService, TodoService>();
+
 var app = builder.Build();
-
-//DB Initialize
-DbInitializer.InitializeDatabase();
-
 
 //Middleware to handle exceptions globally
 app.UseMiddleware<ExceptionMiddleWare>();

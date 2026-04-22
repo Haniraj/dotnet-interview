@@ -1,4 +1,6 @@
 using Microsoft.Data.Sqlite;
+using Microsoft.EntityFrameworkCore;
+using TodoApi.Data;
 using TodoApi.Exceptions;
 using TodoApi.Models;
 
@@ -10,117 +12,179 @@ namespace TodoApi.Services
 
         // private string _connectionString = "Data Source=todos.db";
 
-        public TodoService(string connectionString)
+        private readonly AppDbContext _context;
+
+        public TodoService(AppDbContext context)
         {
-            _connectionString = connectionString;
+            _context = context;
         }
+
         public async Task<Todo> CreateTodoAsync(Todo todo)
         {
-            using var connection = new SqliteConnection(_connectionString);
-            await connection.OpenAsync();
-
-       
-            var cmd = connection.CreateCommand();
-            cmd.CommandText= @"
-                INSERT INTO Todos (Title, Description, IsCompleted, CreatedAt)
-                VALUES (@title, @description, @isCompleted, @createdAt);
-                SELECT last_insert_rowid();
-            ";
-
-            cmd.Parameters.AddWithValue("@title", todo.Title);
-            cmd.Parameters.AddWithValue("@description", todo.Description);
-            cmd.Parameters.AddWithValue("@isCompleted", todo.IsCompleted ? 1 : 0);
-            cmd.Parameters.AddWithValue("@createdAt", DateTime.UtcNow.ToString("o"));
-
-            todo.Id = (int)(long)await cmd.ExecuteScalarAsync();
             todo.CreatedAt = DateTime.UtcNow;
+
+            _context.Todos.Add(todo);
+            await _context.SaveChangesAsync();
+
             return todo;
-        }
-
-        public async Task<Todo> GetTodoByIdAsync(int id)
-        {
-            var list = new List<Todo>();
-
-            using var connection = new SqliteConnection(_connectionString);
-            await connection.OpenAsync();
-            var cmd = connection.CreateCommand();
-            cmd.CommandText = "SELECT * FROM Todos WHERE Id = @id";
-            cmd.Parameters.AddWithValue("@id", id);
-
-            using var reader = await cmd.ExecuteReaderAsync();
-            if (await reader.ReadAsync())
-                return MapReaderToTodo(reader);
-            throw new NotFoundException($"Todo with id {id} not found");
-        }
-
-      
-        public async Task<bool> DeleteTodoAsync(int id)
-        {
-            using var connection = new SqliteConnection(_connectionString);
-            await connection.OpenAsync();
-
-            var cmd = connection.CreateCommand();
-            cmd.CommandText = "DELETE FROM Todos WHERE Id = @id";
-            cmd.Parameters.AddWithValue("@id", id);
-
-            var rowsAffected = await cmd.ExecuteNonQueryAsync();
-            if (rowsAffected == 0)
-                throw new NotFoundException($"Todo with id {id} not found");
-            return true;
         }
 
         public async Task<List<Todo>> GetAllTodosAsync()
         {
-            var todosList = new List<Todo>();
-
-            using var connection = new SqliteConnection(_connectionString);
-            await connection.OpenAsync(); 
-            
-            var cmd = connection.CreateCommand();
-            cmd.CommandText = "SELECT * FROM Todos";
-            using var reader = await cmd.ExecuteReaderAsync();
-
-            while (await reader.ReadAsync())
-            {
-                todosList.Add(MapReaderToTodo(reader));
-            }
-            return todosList;
+            return await _context.Todos.ToListAsync();
         }
 
-       
-        public async Task<Todo> UpdateTodoAsync(int id, Todo todo)
+        public async Task<Todo> GetTodoByIdAsync(int id)
         {
-            using var connection = new SqliteConnection(_connectionString);
-            await connection.OpenAsync();
+            var todo = await _context.Todos.FindAsync(id);
 
-            var cmd = connection.CreateCommand();
-            cmd.CommandText = @"
-                UPDATE Todos
-                SET Title = @title, Description = @description, IsCompleted = @isCompleted
-                WHERE Id = @id
-            ";
-            cmd.Parameters.AddWithValue("@title", todo.Title);
-            cmd.Parameters.AddWithValue("@description", todo.Description);
-            cmd.Parameters.AddWithValue("@isCompleted", todo.IsCompleted ? 1 : 0);
-            cmd.Parameters.AddWithValue("@id", id);
-            var rowsAffected = await cmd.ExecuteNonQueryAsync();
-            if (rowsAffected == 0)
+            if (todo == null)
                 throw new NotFoundException($"Todo with id {id} not found");
-            todo.Id = id;
+
             return todo;
         }
 
-        private Todo MapReaderToTodo(SqliteDataReader reader)
+        public async Task<Todo> UpdateTodoAsync(int id, Todo todo)
         {
-            return new Todo
-            {
-                Id = reader.GetInt32(0),
-                Title = reader.GetString(1),
-                Description = reader.GetString(2),
-                IsCompleted = reader.GetInt32(3) == 1,
-                CreatedAt = DateTime.Parse(reader.GetString(4))
-            };
+            var existing = await _context.Todos.FindAsync(id);
+
+            if (existing == null)
+                throw new NotFoundException($"Todo with id {id} not found");
+
+            existing.Title = todo.Title;
+            existing.Description = todo.Description;
+            existing.IsCompleted = todo.IsCompleted;
+
+            await _context.SaveChangesAsync();
+
+            return existing;
         }
+
+        public async Task<bool> DeleteTodoAsync(int id)
+        {
+            var todo = await _context.Todos.FindAsync(id);
+
+            if (todo == null)
+                throw new NotFoundException($"Todo with id {id} not found");
+
+            _context.Todos.Remove(todo);
+            await _context.SaveChangesAsync();
+
+            return true;
+        }
+
+        /*
+                public TodoService(string connectionString)
+                {
+                    _connectionString = connectionString;
+                }
+                public async Task<Todo> CreateTodoAsync(Todo todo)
+                {
+                    using var connection = new SqliteConnection(_connectionString);
+                    await connection.OpenAsync();
+
+
+                    var cmd = connection.CreateCommand();
+                    cmd.CommandText= @"
+                        INSERT INTO Todos (Title, Description, IsCompleted, CreatedAt)
+                        VALUES (@title, @description, @isCompleted, @createdAt);
+                        SELECT last_insert_rowid();
+                    ";
+
+                    cmd.Parameters.AddWithValue("@title", todo.Title);
+                    cmd.Parameters.AddWithValue("@description", todo.Description);
+                    cmd.Parameters.AddWithValue("@isCompleted", todo.IsCompleted ? 1 : 0);
+                    cmd.Parameters.AddWithValue("@createdAt", DateTime.UtcNow.ToString("o"));
+
+                    todo.Id = (int)(long)await cmd.ExecuteScalarAsync();
+                    todo.CreatedAt = DateTime.UtcNow;
+                    return todo;
+                }
+
+                public async Task<Todo> GetTodoByIdAsync(int id)
+                {
+                    var list = new List<Todo>();
+
+                    using var connection = new SqliteConnection(_connectionString);
+                    await connection.OpenAsync();
+                    var cmd = connection.CreateCommand();
+                    cmd.CommandText = "SELECT * FROM Todos WHERE Id = @id";
+                    cmd.Parameters.AddWithValue("@id", id);
+
+                    using var reader = await cmd.ExecuteReaderAsync();
+                    if (await reader.ReadAsync())
+                        return MapReaderToTodo(reader);
+                    throw new NotFoundException($"Todo with id {id} not found");
+                }
+
+
+                public async Task<bool> DeleteTodoAsync(int id)
+                {
+                    using var connection = new SqliteConnection(_connectionString);
+                    await connection.OpenAsync();
+
+                    var cmd = connection.CreateCommand();
+                    cmd.CommandText = "DELETE FROM Todos WHERE Id = @id";
+                    cmd.Parameters.AddWithValue("@id", id);
+
+                    var rowsAffected = await cmd.ExecuteNonQueryAsync();
+                    if (rowsAffected == 0)
+                        throw new NotFoundException($"Todo with id {id} not found");
+                    return true;
+                }
+
+                public async Task<List<Todo>> GetAllTodosAsync()
+                {
+                    var todosList = new List<Todo>();
+
+                    using var connection = new SqliteConnection(_connectionString);
+                    await connection.OpenAsync(); 
+
+                    var cmd = connection.CreateCommand();
+                    cmd.CommandText = "SELECT * FROM Todos";
+                    using var reader = await cmd.ExecuteReaderAsync();
+
+                    while (await reader.ReadAsync())
+                    {
+                        todosList.Add(MapReaderToTodo(reader));
+                    }
+                    return todosList;
+                }
+
+
+                public async Task<Todo> UpdateTodoAsync(int id, Todo todo)
+                {
+                    using var connection = new SqliteConnection(_connectionString);
+                    await connection.OpenAsync();
+
+                    var cmd = connection.CreateCommand();
+                    cmd.CommandText = @"
+                        UPDATE Todos
+                        SET Title = @title, Description = @description, IsCompleted = @isCompleted
+                        WHERE Id = @id
+                    ";
+                    cmd.Parameters.AddWithValue("@title", todo.Title);
+                    cmd.Parameters.AddWithValue("@description", todo.Description);
+                    cmd.Parameters.AddWithValue("@isCompleted", todo.IsCompleted ? 1 : 0);
+                    cmd.Parameters.AddWithValue("@id", id);
+                    var rowsAffected = await cmd.ExecuteNonQueryAsync();
+                    if (rowsAffected == 0)
+                        throw new NotFoundException($"Todo with id {id} not found");
+                    todo.Id = id;
+                    return todo;
+                }
+
+              /*  private Todo MapReaderToTodo(SqliteDataReader reader)
+                {
+                    return new Todo
+                    {
+                        Id = reader.GetInt32(0),
+                        Title = reader.GetString(1),
+                        Description = reader.GetString(2),
+                        IsCompleted = reader.GetInt32(3) == 1,
+                        CreatedAt = DateTime.Parse(reader.GetString(4))
+                    };
+                }*/
 
         /*
         public Todo CreateTodo(Todo todo)
