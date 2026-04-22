@@ -7,6 +7,17 @@ A simple TODO API built with ASP.NET Core 8.0.
 ### Prerequisites
 - .NET 8.0 SDK
 
+### Install Required packages
+- dotnet add package Microsoft.EntityFrameworkCore 
+- dotnet add package Microsoft.EntityFrameworkCore.Sqlite
+- dotnet add package Microsoft.EntityFrameworkCore.Tools
+
+## Database
+The application uses EF Core
+### Run Migration
+- Add-Migration InitialCreate
+- Update-Database
+
 ### Running the Application
 
 1. Navigate to the TodoApi directory:
@@ -27,10 +38,13 @@ dotnet run
 
 All endpoints are under `/api`:
 
-- `POST /api/createTodo` - Create a new TODO item
-- `POST /api/getTodo` - Get TODO item(s)
-- `POST /api/updateTodo` - Update a TODO item
-- `POST /api/deleteTodo` - Delete a TODO item
+/api/Todo/createTodo
+
+- `POST  /api/Todo/createTodo` - Create a new TODO item
+- `GET   /api/Todo/getAllTodos` - Get All TODO item(s)
+- `GET   /api/Todo/getTodo/{id}` - Get TODO item of particular id
+- `DELETE /api/Todo/deleteTodo/{id}` - Delete a TODO item
+- `PUT  /api/Todo/updateTodo/{id}` - Update a TODO item
 
 ## Testing
 
@@ -40,6 +54,3 @@ cd TodoApi.Tests
 dotnet test
 ```
 
-## Database
-
-The application uses SQLite with a file-based database (`todos.db`) that is automatically created on startup.
