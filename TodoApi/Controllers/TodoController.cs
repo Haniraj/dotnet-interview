@@ -34,6 +34,14 @@ namespace TodoApi.Controllers
             await _todoService.DeleteTodoAsync(id);
             return Ok(new { message = $"Todo with id {id} deleted successfully" });
         }
+
+        [HttpGet("getAllTodos")]
+        public async Task<IActionResult> GetAll()
+        {
+            var todos = await _todoService.GetAllTodosAsync();
+            return Ok(todos);
+        }
+
         /*      
            [HttpPost("getTodo")]
            public IActionResult GetTodo([FromBody] GetTodoRequest request)

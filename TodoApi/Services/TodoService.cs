@@ -69,9 +69,22 @@ namespace TodoApi.Services
             return true;
         }
 
-        public Task<List<Todo>> GetAllTodosAsync()
+        public async Task<List<Todo>> GetAllTodosAsync()
         {
-            throw new NotImplementedException();
+            var todosList = new List<Todo>();
+
+            using var connection = new SqliteConnection(_connectionString);
+            await connection.OpenAsync(); 
+            
+            var cmd = connection.CreateCommand();
+            cmd.CommandText = "SELECT * FROM Todos";
+            using var reader = await cmd.ExecuteReaderAsync();
+
+            while (await reader.ReadAsync())
+            {
+                todosList.Add(MapReaderToTodo(reader));
+            }
+            return todosList;
         }
 
        
