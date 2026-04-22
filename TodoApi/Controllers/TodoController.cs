@@ -42,6 +42,13 @@ namespace TodoApi.Controllers
             return Ok(todos);
         }
 
+        [HttpPut("updateTodo/{id}")]    
+        public async Task<IActionResult> Update(int id, Todo todo)
+        {
+            var result = await _todoService.UpdateTodoAsync(id, todo);
+            return Ok(result);
+        }
+
         /*      
            [HttpPost("getTodo")]
            public IActionResult GetTodo([FromBody] GetTodoRequest request)

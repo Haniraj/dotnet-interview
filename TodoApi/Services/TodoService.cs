@@ -88,9 +88,26 @@ namespace TodoApi.Services
         }
 
        
-        public Task<Todo> UpdateTodoAsync(int id, Todo todo)
+        public async Task<Todo> UpdateTodoAsync(int id, Todo todo)
         {
-            throw new NotImplementedException();
+            using var connection = new SqliteConnection(_connectionString);
+            await connection.OpenAsync();
+
+            var cmd = connection.CreateCommand();
+            cmd.CommandText = @"
+                UPDATE Todos
+                SET Title = @title, Description = @description, IsCompleted = @isCompleted
+                WHERE Id = @id
+            ";
+            cmd.Parameters.AddWithValue("@title", todo.Title);
+            cmd.Parameters.AddWithValue("@description", todo.Description);
+            cmd.Parameters.AddWithValue("@isCompleted", todo.IsCompleted ? 1 : 0);
+            cmd.Parameters.AddWithValue("@id", id);
+            var rowsAffected = await cmd.ExecuteNonQueryAsync();
+            if (rowsAffected == 0)
+                throw new NotFoundException($"Todo with id {id} not found");
+            todo.Id = id;
+            return todo;
         }
 
         private Todo MapReaderToTodo(SqliteDataReader reader)
