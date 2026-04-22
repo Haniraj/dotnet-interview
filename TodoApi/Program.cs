@@ -1,5 +1,6 @@
 using Microsoft.Data.Sqlite;
 using TodoApi.Data;
+using TodoApi.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -9,6 +10,8 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+builder.Services.AddScoped<ITodoService>(
+    _ => new TodoService("Data Source=todos.db"));
 var app = builder.Build();
 
 //DB Initialize

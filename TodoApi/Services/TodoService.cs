@@ -3,14 +3,40 @@ using TodoApi.Models;
 
 namespace TodoApi.Services
 {
-    public class TodoService
+    public class TodoService : ITodoService
     {
-        private string _connectionString = "Data Source=todos.db";
+        private string _connectionString;
 
-        public TodoService()
+        // private string _connectionString = "Data Source=todos.db";
+
+        public TodoService(string connectionString)
         {
+            _connectionString = connectionString;
+        }
+        public async Task<Todo> CreateTodoAsync(Todo todo)
+        {
+            using var connection = new SqliteConnection(_connectionString);
+            await connection.OpenAsync();
+
+       
+            var cmd = connection.CreateCommand();
+            cmd.CommandText= @"
+                INSERT INTO Todos (Title, Description, IsCompleted, CreatedAt)
+                VALUES (@title, @description, @isCompleted, @createdAt);
+                SELECT last_insert_rowid();
+            ";
+
+            cmd.Parameters.AddWithValue("@title", todo.Title);
+            cmd.Parameters.AddWithValue("@description", todo.Description);
+            cmd.Parameters.AddWithValue("@isCompleted", todo.IsCompleted ? 1 : 0);
+            cmd.Parameters.AddWithValue("@createdAt", DateTime.UtcNow.ToString("o"));
+
+            todo.Id = (int)(long)await cmd.ExecuteScalarAsync();
+            todo.CreatedAt = DateTime.UtcNow;
+            return todo;
         }
 
+        /*
         public Todo CreateTodo(Todo todo)
         {
             using var connection = new SqliteConnection(_connectionString);
@@ -107,5 +133,7 @@ namespace TodoApi.Services
             var rowsAffected = command.ExecuteNonQuery();
             return rowsAffected > 0;
         }
+        */
+
     }
 }
