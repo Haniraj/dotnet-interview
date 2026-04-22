@@ -1,4 +1,5 @@
 using Microsoft.Data.Sqlite;
+using TodoApi.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -10,7 +11,8 @@ builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-InitializeDatabase();
+//DB Initialize
+DbInitializer.InitializeDatabase();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -27,23 +29,4 @@ app.MapControllers();
 
 app.Run();
 
-void InitializeDatabase()
-{
-    var connectionString = "Data Source=todos.db";
-    using var connection = new SqliteConnection(connectionString);
-    connection.Open();
 
-    var command = connection.CreateCommand();
-    command.CommandText = @"
-        CREATE TABLE IF NOT EXISTS Todos (
-            Id INTEGER PRIMARY KEY AUTOINCREMENT,
-            Title TEXT NOT NULL,
-            Description TEXT,
-            IsCompleted INTEGER NOT NULL DEFAULT 0,
-            CreatedAt TEXT NOT NULL
-        )
-    ";
-    command.ExecuteNonQuery();
-
-    Console.WriteLine("Database initialized successfully");
-}
