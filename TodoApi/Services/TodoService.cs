@@ -1,4 +1,5 @@
 using Microsoft.Data.Sqlite;
+using TodoApi.Exceptions;
 using TodoApi.Models;
 
 namespace TodoApi.Services
@@ -34,6 +35,51 @@ namespace TodoApi.Services
             todo.Id = (int)(long)await cmd.ExecuteScalarAsync();
             todo.CreatedAt = DateTime.UtcNow;
             return todo;
+        }
+
+        public async Task<Todo> GetTodoByIdAsync(int id)
+        {
+            var list = new List<Todo>();
+
+            using var connection = new SqliteConnection(_connectionString);
+            await connection.OpenAsync();
+            var cmd = connection.CreateCommand();
+            cmd.CommandText = "SELECT * FROM Todos WHERE Id = @id";
+            cmd.Parameters.AddWithValue("@id", id);
+
+            using var reader = await cmd.ExecuteReaderAsync();
+            if (await reader.ReadAsync())
+                return MapReaderToTodo(reader);
+            throw new NotFoundException($"Todo with id {id} not found");
+        }
+
+      
+        public Task<bool> DeleteTodoAsync(int id)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<List<Todo>> GetAllTodosAsync()
+        {
+            throw new NotImplementedException();
+        }
+
+       
+        public Task<Todo> UpdateTodoAsync(int id, Todo todo)
+        {
+            throw new NotImplementedException();
+        }
+
+        private Todo MapReaderToTodo(SqliteDataReader reader)
+        {
+            return new Todo
+            {
+                Id = reader.GetInt32(0),
+                Title = reader.GetString(1),
+                Description = reader.GetString(2),
+                IsCompleted = reader.GetInt32(3) == 1,
+                CreatedAt = DateTime.Parse(reader.GetString(4))
+            };
         }
 
         /*

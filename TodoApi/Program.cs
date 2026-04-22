@@ -1,5 +1,7 @@
 using Microsoft.Data.Sqlite;
 using TodoApi.Data;
+using TodoApi.Exceptions;
+using TodoApi.Middleware;
 using TodoApi.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -17,6 +19,9 @@ var app = builder.Build();
 //DB Initialize
 DbInitializer.InitializeDatabase();
 
+
+//Middleware to handle exceptions globally
+app.UseMiddleware<ExceptionMiddleWare>();
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {

@@ -16,19 +16,17 @@ namespace TodoApi.Controllers
         }
 
         [HttpPost("createTodo")]
-        public async Task<IActionResult> CreateTodo([FromBody] Todo todo)
+        public async Task<IActionResult> CreateTodo(Todo todo)
         {
-            try
-            {
-                var result = await _todoService.CreateTodoAsync(todo);
-                return Ok(result);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(ex.Message);
-            }
+            var result = await _todoService.CreateTodoAsync(todo);
+                return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
         }
 
+        [HttpGet("getTodo/{id}")]
+        public async Task<IActionResult> GetById(int id)
+        {
+           return Ok(await _todoService.GetTodoByIdAsync(id));
+        }
         /*      
            [HttpPost("getTodo")]
            public IActionResult GetTodo([FromBody] GetTodoRequest request)
