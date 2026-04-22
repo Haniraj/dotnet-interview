@@ -27,6 +27,13 @@ namespace TodoApi.Controllers
         {
            return Ok(await _todoService.GetTodoByIdAsync(id));
         }
+
+        [HttpDelete("deleteTodo/{id}")]
+        public async Task<IActionResult> Delete(int id)
+        {
+            await _todoService.DeleteTodoAsync(id);
+            return Ok(new { message = $"Todo with id {id} deleted successfully" });
+        }
         /*      
            [HttpPost("getTodo")]
            public IActionResult GetTodo([FromBody] GetTodoRequest request)

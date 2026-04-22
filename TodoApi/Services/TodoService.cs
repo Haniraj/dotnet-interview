@@ -54,9 +54,19 @@ namespace TodoApi.Services
         }
 
       
-        public Task<bool> DeleteTodoAsync(int id)
+        public async Task<bool> DeleteTodoAsync(int id)
         {
-            throw new NotImplementedException();
+            using var connection = new SqliteConnection(_connectionString);
+            await connection.OpenAsync();
+
+            var cmd = connection.CreateCommand();
+            cmd.CommandText = "DELETE FROM Todos WHERE Id = @id";
+            cmd.Parameters.AddWithValue("@id", id);
+
+            var rowsAffected = await cmd.ExecuteNonQueryAsync();
+            if (rowsAffected == 0)
+                throw new NotFoundException($"Todo with id {id} not found");
+            return true;
         }
 
         public Task<List<Todo>> GetAllTodosAsync()
